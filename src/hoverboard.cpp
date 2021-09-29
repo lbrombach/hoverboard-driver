@@ -2,6 +2,7 @@
 #include "hoverboard.h"
 
 #include <unistd.h>
+#include <iostream>
 #include <fcntl.h>
 #include <termios.h>
 #include <dynamic_reconfigure/server.h>
@@ -100,8 +101,8 @@ void Hoverboard::read() {
     }
 
     if ((ros::Time::now() - last_read).toSec() > 1) {
-        ROS_FATAL("Timeout reading from serial %s failed", PORT);
-        
+////        ROS_FATAL("Timeout reading from serial %s failed", PORT);
+		        
         //publish false when not receiving serial data
         std_msgs::Bool b;
         b.data = false;
@@ -198,7 +199,7 @@ void Hoverboard::write(const ros::Time& time, const ros::Duration& period) {
 
     int rc = ::write(port_fd, (const void*)&command, sizeof(command));
     if (rc < 0) {
-        ROS_ERROR("Error writing to hoverboard serial port");
+////        ROS_ERROR("Error writing to hoverboard serial port");
     }
 }
 
@@ -220,9 +221,33 @@ void Hoverboard::on_encoder_update (int16_t right, int16_t left) {
     posL = left + multL*(ENCODER_MAX-ENCODER_MIN);
     last_wheelcountL = left;
 
+    // When the board shuts down and restarts, wheel ticks are reset to zero so the robot can be suddently lost
+    // Accumulate ticks even if board shuts down and is restarted   
+    static double lastPosL = 0.0, lastPosR = 0.0;
+    static double lastPubPosL = 0.0, lastPubPosR = 0.0;
+    
+    
+    if((ros::Time::now() - last_read).toSec() > 0.2
+		&& abs(posL) < 5 && abs(posR) < 5){
+		lastPosL = posL;
+		lastPosR = posR;
+		std::cout<<"THINGIE RESETTED"<<std::endl;		
+	}
+	
+    double posLDiff = posL - lastPosL;
+    double posRDiff = posR - lastPosR;
+    
+    lastPubPosL += posLDiff;
+    lastPubPosR += posRDiff;
+
+	lastPosL = posL;
+    lastPosR = posR;
+    
     // Convert position in ticks to position in radians
-    joints[0].pos.data = 2.0*M_PI * posL/(double)TICKS_PER_ROTATION;
-    joints[1].pos.data = 2.0*M_PI * posR/(double)TICKS_PER_ROTATION;
+//    joints[0].pos.data = 2.0*M_PI * posL/(double)TICKS_PER_ROTATION;
+    joints[0].pos.data = 2.0*M_PI * lastPubPosL/(double)TICKS_PER_ROTATION;
+//    joints[1].pos.data = 2.0*M_PI * posR/(double)TICKS_PER_ROTATION;
+    joints[1].pos.data = 2.0*M_PI * lastPubPosR/(double)TICKS_PER_ROTATION;
     pos_pub[0].publish(joints[0].pos);
     pos_pub[1].publish(joints[1].pos);
 //    printf("POS: %d %d %.2f %.2f\n", right, left,

@@ -34,7 +34,8 @@ double PID::operator()(const double &measured_value, const double &setpoint, con
 {
     // Compute error terms
     error_ = setpoint - measured_value;
-    ROS_DEBUG_STREAM_THROTTLE(1, "Error: " << error_);
+//// line below was 1
+    ROS_DEBUG_STREAM_THROTTLE(3600, "Error: " << error_);
 
     // Reset the i_error in case the p_error and the setpoint is zero
     // Otherwise there will always be a constant i_error_ that won't vanish
@@ -51,7 +52,8 @@ double PID::operator()(const double &measured_value, const double &setpoint, con
 
     // Use control_toolbox::Pid::computeCommand()
     double output = computeCommand(error_, dt);
-    ROS_DEBUG_STREAM_THROTTLE(1, "PID computed command: " << output);
+//// line below was 1
+    ROS_DEBUG_STREAM_THROTTLE(3600, "PID computed command: " << output);
 
     // Compute final output including feed forward term
     output = f_ * setpoint + output;
@@ -94,12 +96,14 @@ double PID::clamp(const double& value, const double& lower_limit, const double& 
 {
     if (value > upper_limit)
     {
-	ROS_DEBUG_STREAM_THROTTLE(1, "Clamp " << value << " to upper limit " << upper_limit);
+////line below was 1
+	ROS_DEBUG_STREAM_THROTTLE(3600, "Clamp " << value << " to upper limit " << upper_limit);
 	return upper_limit;
     }
     else if (value < lower_limit)
     {
-	ROS_DEBUG_STREAM_THROTTLE(1, "Clamp " << value << " to lower limit " << upper_limit);
+////line below was 1
+	ROS_DEBUG_STREAM_THROTTLE(3600, "Clamp " << value << " to lower limit " << upper_limit);
 	return lower_limit;
     }
 
